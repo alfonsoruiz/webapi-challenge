@@ -4,7 +4,7 @@ const router = express.Router();
 const Projects = require('../data/helpers/projectModel.js');
 const Actions = require('../data/helpers/actionModel.js');
 
-// Projects
+// ***************** Projects *****************
 router.post('/', (req, res) => {
   const name = req.body.name;
   const description = req.body.description;
@@ -73,85 +73,85 @@ router.delete('/:id', (req, res) => {
     });
 });
 
-//Actions
-router.post('/:id/actions', (req, res) => {
-  const project_id = req.body.project_id;
-  const notes = req.body.notes;
-  const description = req.body.description;
+// ***************** Actions *****************
 
-  if (!project_id) {
-    res.status(404).json({ error: 'Error Project needs to have an ID' });
-  }
+router.post('/:id/actions', async (req, res) => {
+  const { notes, description, project_id } = req.body;
+  const newAction = { ...req.body, project_id: req.params.id };
 
-  if (!description || !notes) {
-    res.status(400).json({
-      error: 'Error posting to actions require notes and description'
-    });
-  }
+  try {
+    if (!project_id) {
+      res.status(404).json({ error: 'Error Project needs to ahave an ID' });
+    }
 
-  Actions.insert(req.body)
-    .then(action => {
-      res.status(201).json(action);
-    })
-    .catch(err => {
-      res.status(500).json({ error: 'Erro posting action to DB' });
-    });
-});
-
-router.get('/:id/actions', (req, res) => {
-  Actions.get()
-    .then(action => {
-      res.status(200).json(action);
-    })
-    .catch(err => {
-      res.status(400).json({ error: 'Error getting action from DB' });
-    });
-});
-
-router.get('/:id/actions/:id', (req, res) => {
-  Actions.get(req.params.id)
-    .then(action => {
-      res.status(200).json(action);
-    })
-    .catch(err => {
-      res.status(400).json({ error: 'Error getting action from DB' });
-    });
-});
-
-router.put('/:id/actions/:id', (req, res) => {
-  const project_id = req.body.project_id;
-  const notes = req.body.notes;
-  const description = req.body.description;
-
-  if (!project_id) {
-    res.status(404).json({ error: 'Error Project needs to have an ID' });
-  }
-
-  if (!description || !notes) {
-    res.status(400).json({
-      error: 'Error posting to actions require notes and description'
-    });
-  }
-
-  Actions.update(req.params.id, req.body)
-    .then(action => {
-      res.status(200).json({ action });
-    })
-    .catch(err => {
-      res.status(500).json({ error: 'Error updating action' });
-    });
-});
-
-router.delete('/:id/actions/:id', (req, res) => {
-  Actions.remove(req.params.id)
-    .then(action => {
-      res.status(200).json(action);
-    })
-    .catch(err => {
-      res.status(500).json({
-        error: 'Error deleting action from DB'
+    if (!description || !notes) {
+      res.status(400).json({
+        error: 'Error posting to actions. Requires notes and description'
       });
-    });
+    }
+
+    const action = await Actions.insert(newAction);
+    res.status(201).json(action);
+  } catch (err) {
+    res.status(500).json({ error: 'Error postin action to DB' });
+  }
+});
+
+router.get('/:id/actions', async (req, res) => {
+  try {
+    const actions = await Projects.getProjectActions(req.params.id);
+
+    if (actions.length > 0) {
+      res.status(200).json(actions);
+    } else {
+      res.status(404).json({ message: 'No actions for this project' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting actions for this project' });
+  }
+});
+
+router.get('/:id/actions/:id', async (req, res) => {
+  try {
+    const action = await Actions.get(req.params.id);
+
+    if (action) {
+      res.status(200).json(action);
+    } else {
+      res.status(404).json({ message: 'No action with this ID' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting action with from DB' });
+  }
+});
+
+router.put('/:id/actions/:id', async (req, res) => {
+  const { project_id, notes, description } = req.body;
+  try {
+    if (!project_id) {
+      res.status(404).json({ error: 'Error Project needs to have an ID' });
+    }
+
+    if (!description || !notes) {
+      res.status(400).json({
+        error: 'Error posting to actions require notes and description'
+      });
+    }
+
+    const action = await Actions.update(req.params.id, req.body);
+    res.status(200).json(action);
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating action' });
+  }
+});
+
+router.delete('/:id/actions/:id', async (req, res) => {
+  try {
+    action = await Actions.remove(req.params.id);
+    res.status(200).json({ action });
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting action from DB' });
+  }
 });
 
 module.exports = router;

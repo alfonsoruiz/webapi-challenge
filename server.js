@@ -1,12 +1,13 @@
 const express = require('express');
 const server = express();
 
-// Glboal Middleware
+// Global Middleware
 server.use(express.json());
 
-//Routes
+// Import Routers
 const projectsRouter = require('./projects/projects-router.js');
 
+// Mount Router
 server.use('/api/projects', projectsRouter);
 
 module.exports = server;
